@@ -369,9 +369,9 @@ public class ListMeasurementsFragment extends SherlockFragment {
 		elvAdapter.notifyDataSetChanged();
 
 		//if logged in, download tracks from server
-		if(((ECApplication) getActivity().getApplication()).isLoggedIn()){
-			downloadTracks();
-		}
+		//if(((ECApplication) getActivity().getApplication()).isLoggedIn()){
+			//downloadTracks();
+		//}
 
 	}
 	

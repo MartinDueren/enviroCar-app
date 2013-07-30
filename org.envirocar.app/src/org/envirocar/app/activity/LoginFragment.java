@@ -24,10 +24,15 @@ package org.envirocar.app.activity;
 import java.io.IOException;
 import java.net.UnknownHostException;
 
+import android.widget.Toast;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicHeader;
 import org.envirocar.app.R;
@@ -288,36 +293,28 @@ public class LoginFragment extends SherlockFragment {
 	 * credentials
 	 */
 	private boolean authenticateHttp(String user, String token) {
-		DefaultHttpClient httpclient = new DefaultHttpClient();
-		try {
-			HttpGet httpget = new HttpGet(
-					ECApplication.BASE_URL+"/users/"
-							+ user);
-			httpget.addHeader(new BasicHeader("X-User", user));
-			httpget.addHeader(new BasicHeader("X-Token", token));
-			HttpResponse response = httpclient.execute(httpget);
+		HttpClient httpClient = new DefaultHttpClient();
+        HttpGet httpGet = new HttpGet("http://giv-dueren.uni-muenster.de/static_pages/auth");
+        httpGet.addHeader(BasicScheme.authenticate(
+                new UsernamePasswordCredentials(user, token),
+                "UTF-8", false));
 
-			int status = response.getStatusLine().getStatusCode();
-			// TODO finer errors..
-			if (status != HttpStatus.SC_OK) {
-				mPasswordView.setError(getString(R.string.error_incorrect_password));
-				return false;
-			} else {
-				return true;
+        HttpResponse httpResponse = null;
+        try {
+            httpResponse = httpClient.execute(httpGet);
+        } catch (IOException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+        HttpEntity responseEntity = httpResponse.getEntity();
+        int status = httpResponse.getStatusLine().getStatusCode();
 
-			}
-		} catch (UnknownHostException e){
-			mUsernameView.setError(getString(R.string.error_host_not_found));
-		} catch (ClientProtocolException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			// When HttpClient instance is no longer needed,
-			// shut down the connection manager to ensure
-			// immediate deallocation of all system resources
-			httpclient.getConnectionManager().shutdown();
-		}
-		return false;
+        if (status != HttpStatus.SC_OK) {
+            mPasswordView.setError(getString(R.string.error_incorrect_password));
+            return false;
+        } else {
+            return true;
+
+        }
+
 	}
 }

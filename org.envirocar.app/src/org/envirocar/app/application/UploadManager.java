@@ -72,17 +72,13 @@ public class UploadManager {
 
 	private static final String TAG = "uploadmanager";
 
-	private String url = ECApplication.BASE_URL + "/users/%1$s/tracks";
+	private String url = "http://giv-dueren.uni-muenster.de/trip/create.json?import=y&user=%s";//ECApplication.BASE_URL + "/users/%1$s/tracks";
 
 	private DbAdapterLocal dbAdapterLocal;
 	private DbAdapterRemote dbAdapterRemote;
 	private Context context;
 	
-	/**
-	 * Normal constructor for this manager. Specify the context and the dbadapter.
-	 * @param dbAdapter The dbadapter (most likely the local one)
-	 * @param ctx The context.
-	 */
+
 	public UploadManager(Context ctx) {
 		this.context = ctx;
 		this.dbAdapterLocal = (DbAdapterLocal) ((ECApplication) context).getDbAdapterLocal();
@@ -147,9 +143,9 @@ public class UploadManager {
 					((ECApplication) context).createNotification("success");
 					dbAdapterLocal.deleteTrack(t.getId());
 					t.setId(httpResult);
-					dbAdapterRemote.insertTrackWithMeasurements(t);
+					//dbAdapterRemote.insertTrackWithMeasurements(t);
 				} else {
-					((ECApplication) context).createNotification("General Track error. Please contact envirocar.org");
+					((ECApplication) context).createNotification("Error (" + httpResult + "@url: " + url + ")");
 				}
 				
 			}

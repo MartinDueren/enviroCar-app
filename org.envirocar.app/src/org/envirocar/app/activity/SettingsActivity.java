@@ -168,17 +168,17 @@ public class SettingsActivity extends SherlockPreferenceActivity {
 		this.getSupportActionBar().setDisplayHomeAsUpEnabled(false);
 		this.getSupportActionBar().setHomeButtonEnabled(false);
 
-		about = findPreference("about_version");
-		about.setSummary(((ECApplication) getApplication()).getVersionString());
-		about.setOnPreferenceClickListener(new OnPreferenceClickListener() {
+		//about = findPreference("about_version");
+		//about.setSummary(((ECApplication) getApplication()).getVersionString());
+		//about.setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			
-			@Override
-			public boolean onPreferenceClick(Preference preference) {
-				Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(getResources().getString(R.string.envirocar_org)));
-				startActivity(i);
-				return true;
-			}
-		});		
+//			@Override
+//			public boolean onPreferenceClick(Preference preference) {
+//				Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(getResources().getString(R.string.envirocar_org)));
+//				startActivity(i);
+//				return true;
+//			}
+//		});
 
 		final Activity thisSettingsActivity = this;
 		final EditTextPreference displacementPref = (EditTextPreference) getPreferenceScreen().findPreference(ENGINE_DISPLACEMENT);

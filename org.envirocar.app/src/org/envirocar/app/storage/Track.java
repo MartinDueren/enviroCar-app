@@ -325,22 +325,29 @@ public class Track implements Comparable<Track> {
 		double maf = m.getMaf();
 		double calculatedMaf = m.getCalculatedMaf();
 
+        double consumption = 0;
 		if (maf > 0) {
 			if (this.fuelType.equals("gasoline")) {
-				return (maf / 14.7) / 747;
+				consumption = ((maf * 3600) / (14.7 * 747 * m.getSpeed()));
 			} else if (this.fuelType.equals("diesel")) {
-				return (maf / 14.5) / 832;
+                consumption = ((maf * 3600) / (14.5 * 832 * m.getSpeed()));
 			} else
 				throw new FuelConsumptionException();
 		} else {
 			if (this.fuelType.equals("gasoline")) {
-				return (calculatedMaf / 14.7) / 747;
+                consumption = ((calculatedMaf * 3600) / (14.7 * 747 * m.getSpeed()));
 			} else if (this.fuelType.equals("diesel")) {
-				return (calculatedMaf / 14.5) / 832;
+                consumption = ((calculatedMaf * 3600) / (14.5 * 832 * m.getSpeed()));
 			} else
 				throw new FuelConsumptionException();
 		}
 
+        //if speed is greater than 0 divide by it and multiply by 100 to get l/100km
+        if(m.getSpeed() > 0){
+            consumption = consumption / m.getSpeed() * 100;
+        }
+
+        return consumption;
 	}
 
 	/**

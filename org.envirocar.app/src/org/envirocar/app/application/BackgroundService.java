@@ -1,6 +1,6 @@
-/* 
+/*
  * enviroCar 2013
- * Copyright (C) 2013  
+ * Copyright (C) 2013
  * Martin Dueren, Jakob Moellers, Gerald Pape, Christopher Stephan
  *
  * This program is free software; you can redistribute it and/or modify
@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- * 
+ *
  */
 
 package org.envirocar.app.application;
@@ -49,271 +49,271 @@ import android.util.Log;
 /**
  * Service for connection to Bluetooth device and running commands. Imported
  * from Android OBD Reader project in some parts.
- * 
+ *
  * @author jakob
- * 
+ *
  */
 public class BackgroundService extends Service {
 
-	// Properties
+    // Properties
 
-	private AtomicBoolean isTheServiceRunning = new AtomicBoolean(false);
-	private AtomicBoolean isWaitingListRunning = new AtomicBoolean(false);
-	private Long counter = 0L;
+    private AtomicBoolean isTheServiceRunning = new AtomicBoolean(false);
+    private AtomicBoolean isWaitingListRunning = new AtomicBoolean(false);
+    private Long counter = 0L;
 
-	// Bluetooth devices and connection items
+    // Bluetooth devices and connection items
 
-	private BluetoothDevice bluetoothDevice = null;
-	private BluetoothSocket bluetoothSocket = null;
-	private static final UUID MY_UUID = UUID
-			.fromString("00001101-0000-1000-8000-00805F9B34FB");
-	private Listener callbackListener = null;
-	private final Binder binder = new LocalBinder();
-	private BlockingQueue<CommonCommand> waitingList = new LinkedBlockingQueue<CommonCommand>();
+    private BluetoothDevice bluetoothDevice = null;
+    private BluetoothSocket bluetoothSocket = null;
+    private static final UUID MY_UUID = UUID
+            .fromString("00001101-0000-1000-8000-00805F9B34FB");
+    private Listener callbackListener = null;
+    private final Binder binder = new LocalBinder();
+    private BlockingQueue<CommonCommand> waitingList = new LinkedBlockingQueue<CommonCommand>();
 
-	@Override
-	public IBinder onBind(Intent intent) {
-		return binder;
-	}
+    @Override
+    public IBinder onBind(Intent intent) {
+        return binder;
+    }
 
-	@Override
-	public void onCreate() {
-	}
+    @Override
+    public void onCreate() {
+    }
 
-	@Override
-	public void onDestroy() {
-		stopService();
-	}
+    @Override
+    public void onDestroy() {
+        stopService();
+    }
 
-	@Override
-	public int onStartCommand(Intent intent, int flags, int startId) {
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
 
-		startBackgroundService();
+        startBackgroundService();
 
-		return START_STICKY;
-	}
+        return START_STICKY;
+    }
 
-	/**
-	 * Starts the background service (bluetooth connction). Then calls methods
-	 * to start sending the obd commands for initialization.
-	 */
-	private void startBackgroundService() {
+    /**
+     * Starts the background service (bluetooth connction). Then calls methods
+     * to start sending the obd commands for initialization.
+     */
+    private void startBackgroundService() {
 
-		SharedPreferences preferences = PreferenceManager
-				.getDefaultSharedPreferences(this);
+        SharedPreferences preferences = PreferenceManager
+                .getDefaultSharedPreferences(this);
 
-		// Init bluetooth
+        // Init bluetooth
 
-		String remoteDevice = preferences.getString(
-				org.envirocar.app.activity.SettingsActivity.BLUETOOTH_KEY, null);
+        String remoteDevice = preferences.getString(
+                org.envirocar.app.activity.SettingsActivity.BLUETOOTH_KEY, null);
 
-		// Stop if device is not available
+        // Stop if device is not available
 
-		if (remoteDevice == null || "".equals(remoteDevice)) {
-			stopService();
-		}
+        if (remoteDevice == null || "".equals(remoteDevice)) {
+            stopService();
+        }
 
-		try {
+        try {
 
-			final BluetoothAdapter bluetoothAdapter = BluetoothAdapter
-					.getDefaultAdapter();
-			bluetoothDevice = bluetoothAdapter.getRemoteDevice(remoteDevice);
-			bluetoothAdapter.cancelDiscovery();
+            final BluetoothAdapter bluetoothAdapter = BluetoothAdapter
+                    .getDefaultAdapter();
+            bluetoothDevice = bluetoothAdapter.getRemoteDevice(remoteDevice);
+            bluetoothAdapter.cancelDiscovery();
 
-			startConnection();
-		} catch (Exception e) {
-			stopService();
-			Log.e("obd2", "retry " + e.toString());
-		}
-	}
+            startConnection();
+        } catch (Exception e) {
+            stopService();
+            Log.e("obd2", "retry " + e.toString());
+        }
+    }
 
-	/**
-	 * Start and configure the connection to the OBD interface.
-	 * 
-	 * @throws IOException
-	 */
-	private void startConnection() throws IOException {
+    /**
+     * Start and configure the connection to the OBD interface.
+     *
+     * @throws IOException
+     */
+    private void startConnection() throws IOException {
 
-		// Connect to bluetooth device
+        // Connect to bluetooth device
 
-		bluetoothSocket = bluetoothDevice
-				.createRfcommSocketToServiceRecord(MY_UUID);
+        bluetoothSocket = bluetoothDevice
+                .createRfcommSocketToServiceRecord(MY_UUID);
 
-		bluetoothSocket.connect();
-		
-		((ECApplication) getApplication()).createNewTrackIfNecessary();
+        bluetoothSocket.connect();
 
-		addCommandToWaitingList(new ObdReset());
-		addCommandToWaitingList(new EchoOff());
-		addCommandToWaitingList(new EchoOff());
-		addCommandToWaitingList(new LineFeedOff());
-		addCommandToWaitingList(new Timeout(62));
-		addCommandToWaitingList(new SelectAutoProtocol());
-		
+        ((ECApplication) getApplication()).createNewTrackIfNecessary();
+
+        addCommandToWaitingList(new ObdReset());
+        addCommandToWaitingList(new EchoOff());
+        addCommandToWaitingList(new EchoOff());
+        addCommandToWaitingList(new LineFeedOff());
+        addCommandToWaitingList(new Timeout(62));
+        addCommandToWaitingList(new SelectAutoProtocol());
+
 		/*
 		 * This is what Torque does:
 		 */
 
-		// addCommandToWaitingList(new Defaults());
-		// addCommandToWaitingList(new Defaults());
-		// addCommandToWaitingList(new ObdReset());
-		// addCommandToWaitingList(new ObdReset());
-		// addCommandToWaitingList(new EchoOff());
-		// addCommandToWaitingList(new EchoOff());
-		// addCommandToWaitingList(new EchoOff());
-		// addCommandToWaitingList(new MemoryOff());
-		// addCommandToWaitingList(new MemoryOff());
-		// addCommandToWaitingList(new MemoryOff());
-		// addCommandToWaitingList(new MemoryOff());
-		// addCommandToWaitingList(new MemoryOff());
-		// addCommandToWaitingList(new LineFeedOff());
-		// addCommandToWaitingList(new SpacesOff());
-		// addCommandToWaitingList(new HeadersOff());
-		// addCommandToWaitingList(new Defaults());
-		// addCommandToWaitingList(new ObdReset());
-		// addCommandToWaitingList(new ObdReset());
-		// addCommandToWaitingList(new EchoOff());
-		// addCommandToWaitingList(new EchoOff());
-		// addCommandToWaitingList(new EchoOff());
-		// addCommandToWaitingList(new MemoryOff());
-		// addCommandToWaitingList(new MemoryOff());
-		// addCommandToWaitingList(new MemoryOff());
-		// addCommandToWaitingList(new MemoryOff());
-		// addCommandToWaitingList(new MemoryOff());
-		// addCommandToWaitingList(new LineFeedOff());
-		// addCommandToWaitingList(new SpacesOff());
-		// addCommandToWaitingList(new HeadersOff());
-		// addCommandToWaitingList(new SelectAutoProtocol());
-		// addCommandToWaitingList(new PIDSupported());
-		// addCommandToWaitingList(new EnableHeaders());
-		// addCommandToWaitingList(new PIDSupported());
-		// addCommandToWaitingList(new HeadersOff());
+        // addCommandToWaitingList(new Defaults());
+        // addCommandToWaitingList(new Defaults());
+        // addCommandToWaitingList(new ObdReset());
+        // addCommandToWaitingList(new ObdReset());
+        // addCommandToWaitingList(new EchoOff());
+        // addCommandToWaitingList(new EchoOff());
+        // addCommandToWaitingList(new EchoOff());
+        // addCommandToWaitingList(new MemoryOff());
+        // addCommandToWaitingList(new MemoryOff());
+        // addCommandToWaitingList(new MemoryOff());
+        // addCommandToWaitingList(new MemoryOff());
+        // addCommandToWaitingList(new MemoryOff());
+        // addCommandToWaitingList(new LineFeedOff());
+        // addCommandToWaitingList(new SpacesOff());
+        // addCommandToWaitingList(new HeadersOff());
+        // addCommandToWaitingList(new Defaults());
+        // addCommandToWaitingList(new ObdReset());
+        // addCommandToWaitingList(new ObdReset());
+        // addCommandToWaitingList(new EchoOff());
+        // addCommandToWaitingList(new EchoOff());
+        // addCommandToWaitingList(new EchoOff());
+        // addCommandToWaitingList(new MemoryOff());
+        // addCommandToWaitingList(new MemoryOff());
+        // addCommandToWaitingList(new MemoryOff());
+        // addCommandToWaitingList(new MemoryOff());
+        // addCommandToWaitingList(new MemoryOff());
+        // addCommandToWaitingList(new LineFeedOff());
+        // addCommandToWaitingList(new SpacesOff());
+        // addCommandToWaitingList(new HeadersOff());
+        // addCommandToWaitingList(new SelectAutoProtocol());
+        // addCommandToWaitingList(new PIDSupported());
+        // addCommandToWaitingList(new EnableHeaders());
+        // addCommandToWaitingList(new PIDSupported());
+        // addCommandToWaitingList(new HeadersOff());
 
 		/*
 		 * End Torque
 		 */
 
-		// Service is running..
-		isTheServiceRunning.set(true);
+        // Service is running..
+        isTheServiceRunning.set(true);
 
-		// Set waiting list execution counter
-		counter = 0L;
+        // Set waiting list execution counter
+        counter = 0L;
 
-	}
+    }
 
-	/**
-	 * Add a command to the waiting-list
-	 * 
-	 * @param job
-	 *            The command that should be added
-	 * @return Counter in the waiting list
-	 */
-	public Long addCommandToWaitingList(CommonCommand job) {
+    /**
+     * Add a command to the waiting-list
+     *
+     * @param job
+     *            The command that should be added
+     * @return Counter in the waiting list
+     */
+    public Long addCommandToWaitingList(CommonCommand job) {
 
-		counter++;
+        counter++;
 
-		job.setCommandId(counter);
-		try {
-			waitingList.put(job);
-		} catch (InterruptedException e) {
-			job.setCommandState(CommonCommandState.QUEUE_ERROR);
-		}
+        job.setCommandId(counter);
+        try {
+            waitingList.put(job);
+        } catch (InterruptedException e) {
+            job.setCommandState(CommonCommandState.QUEUE_ERROR);
+        }
 
-		return counter;
-	}
+        return counter;
+    }
 
-	/**
-	 * Method that stops the service, removes everything from the waiting list
-	 */
-	public void stopService() {
+    /**
+     * Method that stops the service, removes everything from the waiting list
+     */
+    public void stopService() {
 
-		waitingList.removeAll(waitingList);
-		isWaitingListRunning.set(false);
-		callbackListener = null;
-		isTheServiceRunning.set(false);
-		
-		ECApplication application = (ECApplication) getApplication();
-		application.stopLocating();
+        waitingList.removeAll(waitingList);
+        isWaitingListRunning.set(false);
+        callbackListener = null;
+        isTheServiceRunning.set(false);
 
-		try {
-			bluetoothSocket.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+        ECApplication application = (ECApplication) getApplication();
+        application.stopLocating();
 
-		stopSelf();
-	}
+        try {
+            bluetoothSocket.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-	/**
-	 * Binder imported directly from Android OBD Project. Runs the waiting list
-	 * when jobs are added to it
-	 * 
-	 * @author jakob
-	 * 
-	 */
-	public class LocalBinder extends Binder implements Monitor {
-		public void setListener(Listener callback) {
-			callbackListener = callback;
-		}
+        stopSelf();
+    }
 
-		public boolean isRunning() {
-			return isTheServiceRunning.get();
-		}
+    /**
+     * Binder imported directly from Android OBD Project. Runs the waiting list
+     * when jobs are added to it
+     *
+     * @author jakob
+     *
+     */
+    public class LocalBinder extends Binder implements Monitor {
+        public void setListener(Listener callback) {
+            callbackListener = callback;
+        }
 
-		public void executeWaitingList() {
-			runWaitingList();
-		}
+        public boolean isRunning() {
+            return isTheServiceRunning.get();
+        }
 
-		public void newJobToWaitingList(CommonCommand job) {
-			waitingList.add(job);
+        public void executeWaitingList() {
+            runWaitingList();
+        }
 
-			if (!isWaitingListRunning.get())
-				runWaitingList();
-		}
-	}
+        public void newJobToWaitingList(CommonCommand job) {
+            waitingList.add(job);
 
-	/**
-	 * Runs the waiting list until the service is stopped
-	 */
-	private void runWaitingList() {
+            if (!isWaitingListRunning.get())
+                runWaitingList();
+        }
+    }
 
-		isWaitingListRunning.set(true);
+    /**
+     * Runs the waiting list until the service is stopped
+     */
+    private void runWaitingList() {
 
-		// Go through all the waiting-list-jobs
+        isWaitingListRunning.set(true);
 
-		while (!waitingList.isEmpty()) {
+        // Go through all the waiting-list-jobs
 
-			CommonCommand currentJob = null;
+        while (!waitingList.isEmpty()) {
 
-			// Try to run the first job from the waitinglist
+            CommonCommand currentJob = null;
 
-			try {
+            // Try to run the first job from the waitinglist
 
-				currentJob = waitingList.take();
+            try {
 
-				if (currentJob.getCommandState().equals(CommonCommandState.NEW)) {
+                currentJob = waitingList.take();
 
-					// Run the job
+                if (currentJob.getCommandState().equals(CommonCommandState.NEW)) {
 
-					currentJob.setCommandState(CommonCommandState.RUNNING);
-					currentJob.run(bluetoothSocket.getInputStream(),
-							bluetoothSocket.getOutputStream());
-				}
-			} catch (Exception e) {
-				currentJob.setCommandState(CommonCommandState.EXECUTION_ERROR);
-			}
+                    // Run the job
 
-			// Finished if no more job is in the waiting-list
+                    currentJob.setCommandState(CommonCommandState.RUNNING);
+                    currentJob.run(bluetoothSocket.getInputStream(),
+                            bluetoothSocket.getOutputStream());
+                }
+            } catch (Exception e) {
+                currentJob.setCommandState(CommonCommandState.EXECUTION_ERROR);
+            }
 
-			if (currentJob != null) {
-				currentJob.setCommandState(CommonCommandState.FINISHED);
-				callbackListener.receiveUpdate(currentJob);
-			}
-		}
+            // Finished if no more job is in the waiting-list
 
-		// Execution finished
+            if (currentJob != null) {
+                currentJob.setCommandState(CommonCommandState.FINISHED);
+                callbackListener.receiveUpdate(currentJob);
+            }
+        }
 
-		isWaitingListRunning.set(false);
-	}
+        // Execution finished
+
+        isWaitingListRunning.set(false);
+    }
 
 }

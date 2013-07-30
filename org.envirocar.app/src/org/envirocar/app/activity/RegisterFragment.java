@@ -27,6 +27,7 @@ import java.net.UnknownHostException;
 
 import org.apache.http.HttpStatus;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -382,5 +383,6 @@ public class RegisterFragment extends SherlockFragment {
 			httpClient.getConnectionManager().shutdown();
 		}
 	}
+
 
 }

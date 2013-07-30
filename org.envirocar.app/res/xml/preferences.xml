@@ -35,11 +35,6 @@
             android:summary="@string/pref_in_liters"
             android:inputType="numberDecimal"/>
     </PreferenceCategory>
-    <PreferenceCategory android:title="@string/pref_about" >
-        <Preference 
-            android:key="about_version"
-            android:title="@string/envirocar.org"/>
-    </PreferenceCategory>
     
 
 </PreferenceScreen>
